@@ -1,12 +1,52 @@
-var app = angular.module('website', ['ngAnimate', 'ui.bootstrap']);
+var app = angular.module('website', ['ngAnimate', 'ui.bootstrap','ngFileUpload']);
 
-app.controller('MainCtrl', function ($scope, $timeout, QueueService) {
-    var INTERVAL = 3000,
-        slides = [{id:"image00", src:"./images/image00.jpg"},
-        {id:"image01", src:"./images/image01.jpg"},
-        {id:"image02", src:"./images/image02.jpg"},
-        {id:"image03", src:"./images/image03.jpg"},
-        {id:"image04", src:"./images/image04.jpg"}];
+app.controller('UploadCtrl', ['$scope', 'Upload', '$timeout', function ($scope, Upload, $timeout) {
+    $scope.uploadFiles = function(files) {
+        $scope.files = files;
+        angular.forEach(files, function(file) {
+            
+            if (file) {
+                file.upload = Upload.upload({
+                  url: 'http://localhost:5000/addphoto?callback=ciao',
+                  file: file
+                });
+            }
+            //     file.upload.then(function (response) {
+            //       $timeout(function () {
+            //         file.result = response.data;
+            //       });
+            //     }, function (response) {
+            //       if (response.status > 0)
+            //         $scope.errorMsg = response.status + ': ' + response.data;
+            //     });
+
+            //     file.upload.progress(function (evt) {
+            //       file.progress = Math.min(100, parseInt(100.0 * 
+            //                                evt.loaded / evt.total));
+            //     });
+            // }   
+        });
+    }
+}]);
+app.service('PhotoService', function ($http) {
+    var promise = $http.get('http://localhost:5000/').
+    success(function (data) {
+        return data;
+    });
+    return promise;
+})
+
+app.controller('MainCtrl', function ($scope, $timeout, QueueService, PhotoService) {
+    var INTERVAL = 3000;
+        slides = [] ;
+        PhotoService.then(function(data){
+            loadSlides(data.data);
+        });
+        //  = [{id:"image00", src:"./images/image00.jpg"},
+        // {id:"image01", src:"./images/image01.jpg"},
+        // {id:"image02", src:"./images/image02.jpg"},
+        // {id:"image03", src:"./images/image03.jpg"},
+        // {id:"image04", src:"./images/image04.jpg"}];
 
     function setCurrentSlideIndex(index) {
         $scope.currentIndex = index;
@@ -29,8 +69,9 @@ app.controller('MainCtrl', function ($scope, $timeout, QueueService) {
         return $scope.currentAnimation === animation;
     }
 
-    function loadSlides() {
-        QueueService.loadManifest(slides);
+    function loadSlides(data) {
+        
+        QueueService.loadManifest(data);
     }
 
     $scope.$on('queueProgress', function(event, queueProgress) {
@@ -58,7 +99,7 @@ app.controller('MainCtrl', function ($scope, $timeout, QueueService) {
     $scope.setCurrentAnimation = setCurrentAnimation;
     $scope.isCurrentAnimation = isCurrentAnimation;
 
-    loadSlides();
+    
 });
 
 app.factory('QueueService', function($rootScope){
@@ -153,4 +194,6 @@ app.directive('bgImage', function ($window, $timeout) {
         });
     }
 });
+
+
 
